@@ -3,21 +3,42 @@ import random
 from pathlib import Path
 
 app = Flask(__name__)
-NAMES_FILE = Path("random_names.txt")
+FIRST_NAMES_FILE = Path("random_names.txt")
+LAST_NAMES_FILE = Path("random_surnames.txt")
 
 
-def load_names():
-    if not NAMES_FILE.exists():
-        return None, "Error: random_names.txt not found."
+def load_name_list(path: Path, missing_message: str, empty_message: str):
+    if not path.exists():
+        return None, missing_message
 
     names = [
         line.strip()
-        for line in NAMES_FILE.read_text(encoding="utf-8").splitlines()
+        for line in path.read_text(encoding="utf-8").splitlines()
         if line.strip()
     ]
     if not names:
-        return None, "No names found in the file."
+        return None, empty_message
     return names, None
+
+
+def generate_full_name():
+    first_names, first_err = load_name_list(
+        FIRST_NAMES_FILE,
+        "Error: random_names.txt not found.",
+        "No first names found in random_names.txt.",
+    )
+    if first_err:
+        return None, first_err
+
+    last_names, last_err = load_name_list(
+        LAST_NAMES_FILE,
+        "Error: random_surnames.txt not found.",
+        "No last names found in random_surnames.txt.",
+    )
+    if last_err:
+        return None, last_err
+
+    return f"{random.choice(first_names)} {random.choice(last_names)}", None
 
 
 @app.route("/")
@@ -30,6 +51,7 @@ def index():
             <meta charset="utf-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1" />
             <title>Name Chatbot</title>
+            <link rel="icon" href="data:,">
             <style>
                 body {
                     font-family: Arial, sans-serif;
@@ -70,10 +92,16 @@ def index():
 
 @app.route("/api/name")
 def api_name():
-    names, err = load_names()
+    full_name, err = generate_full_name()
     if err:
         return jsonify({"error": err}), 400
-    return jsonify({"name": random.choice(names)})
+    return jsonify({"name": full_name})
+
+
+@app.route("/favicon.ico")
+def favicon():
+    # Return an empty success response to avoid noisy 404s in browser devtools.
+    return ("", 204)
 
 
 if __name__ == "__main__":
