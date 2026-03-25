@@ -1,6 +1,6 @@
 # NameGen
 
-Small Flask web app that generates names (plus an optional Ollama chat + name generator panel).
+Small Flask web app that generates names.
 
 ## Run locally
 
@@ -19,9 +19,4 @@ Then open `http://127.0.0.1:5000`.
 4. The app starts via the included `Procfile`:
    - `web: gunicorn app:app`
 5. When deploy finishes, open the Railway **Domain** URL (your “working link”).
-
-### Ollama note
-
-On a deployed site, `http://127.0.0.1:11434` points to the Railway server (not your PC).
-To use Ollama on the live link you’d need Ollama running on that server or an Ollama base URL you can reach from Railway.
 

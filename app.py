@@ -1,54 +1,11 @@
-from flask import Flask, jsonify, render_template_string, send_from_directory, request
+from flask import Flask, jsonify, render_template_string, send_from_directory
 import random
 from pathlib import Path
-import json
-import urllib.request
-import urllib.parse
-import os
 
 app = Flask(__name__)
 BASE_DIR = Path(__file__).resolve().parent
 FIRST_NAMES_FILE = BASE_DIR / "random_names.txt"
 LAST_NAMES_FILE = BASE_DIR / "random_surnames.txt"
-
-DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434"
-DEFAULT_OLLAMA_MODEL = "llama3"
-
-# Default safety: only allow localhost Ollama to avoid SSRF.
-# Set env var `OLLAMA_ALLOW_REMOTE=1` to allow other hosts.
-OLLAMA_ALLOWED_HOSTS = {"127.0.0.1", "localhost"}
-OLLAMA_ALLOW_REMOTE = os.environ.get("OLLAMA_ALLOW_REMOTE") == "1"
-
-
-def _validate_ollama_base_url(base_url: str):
-    if not base_url:
-        return None, "Ollama base URL is required."
-
-    parsed = urllib.parse.urlparse(base_url)
-    if parsed.scheme not in ("http", "https") or not parsed.hostname:
-        return None, "Ollama base URL must be http(s)://<host>[:port]."
-
-    if not OLLAMA_ALLOW_REMOTE and parsed.hostname not in OLLAMA_ALLOWED_HOSTS:
-        return None, "Ollama base URL must be localhost/127.0.0.1 (safety restriction)."
-
-    # Normalize without trailing slash.
-    normalized = f"{parsed.scheme}://{parsed.hostname}"
-    if parsed.port:
-        normalized += f":{parsed.port}"
-    return normalized, None
-
-
-def _ollama_post_json(url: str, payload: dict, timeout_s: int = 60):
-    data = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(
-        url,
-        data=data,
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    with urllib.request.urlopen(req, timeout=timeout_s) as resp:
-        body = resp.read().decode("utf-8")
-    return json.loads(body)
 
 FANTASY_FIRST_START = [
     "ae",
@@ -215,76 +172,6 @@ def generate_full_name():
     return f"{selected_first} {selected_last}", None
 
 
-def ollama_chat(base_url: str, model: str, messages: list):
-    url = base_url.rstrip("/") + "/api/chat"
-    payload = {"model": model, "messages": messages, "stream": False}
-    resp = _ollama_post_json(url, payload)
-    content = resp.get("message", {}).get("content", "")
-    return content.strip()
-
-
-def ollama_generate(base_url: str, model: str, prompt: str):
-    url = base_url.rstrip("/") + "/api/generate"
-    payload = {"model": model, "prompt": prompt, "stream": False}
-    resp = _ollama_post_json(url, payload)
-    return str(resp.get("response", "")).strip()
-
-
-@app.route("/api/ollama/chat", methods=["POST"])
-def api_ollama_chat():
-    data = request.get_json(silent=True) or {}
-
-    base_url = data.get("base_url", DEFAULT_OLLAMA_BASE_URL)
-    model = data.get("model", DEFAULT_OLLAMA_MODEL)
-    messages = data.get("messages", [])
-
-    valid_base_url, err = _validate_ollama_base_url(str(base_url))
-    if err:
-        return jsonify({"error": err}), 400
-    if not isinstance(messages, list) or not messages:
-        return jsonify({"error": "messages must be a non-empty array."}), 400
-
-    try:
-        reply = ollama_chat(valid_base_url, str(model), messages)
-        if not reply:
-            return jsonify({"error": "Ollama returned an empty reply."}), 502
-        return jsonify({"reply": reply})
-    except Exception as e:
-        return jsonify({"error": f"Ollama chat failed: {e}"}), 502
-
-
-@app.route("/api/ollama/name", methods=["POST"])
-def api_ollama_name():
-    data = request.get_json(silent=True) or {}
-
-    base_url = data.get("base_url", DEFAULT_OLLAMA_BASE_URL)
-    model = data.get("model", DEFAULT_OLLAMA_MODEL)
-    prompt = data.get(
-        "prompt",
-        "Generate a fantasy character full name (first and last), separated by a single space. "
-        "Output only the name. No quotes. No extra text.",
-    )
-
-    valid_base_url, err = _validate_ollama_base_url(str(base_url))
-    if err:
-        return jsonify({"error": err}), 400
-
-    prompt = str(prompt).strip()
-    if not prompt:
-        return jsonify({"error": "prompt is required."}), 400
-
-    try:
-        raw = ollama_generate(valid_base_url, str(model), prompt)
-        cleaned = raw.strip()
-        cleaned = cleaned.splitlines()[0].strip() if cleaned else cleaned
-        cleaned = cleaned.strip('"').strip("'").strip()
-        if not cleaned:
-            return jsonify({"error": "Ollama returned an empty name."}), 502
-        return jsonify({"name": cleaned})
-    except Exception as e:
-        return jsonify({"error": f"Ollama generate failed: {e}"}), 502
-
-
 @app.route("/")
 def index():
     return render_template_string(
@@ -392,7 +279,6 @@ def index():
                     display: flex;
                     gap: 0.6rem;
                     justify-content: center;
-                    flex-wrap: wrap;
                 }
 
                 .secondary-btn {
@@ -471,89 +357,6 @@ def index():
                     background: rgba(255, 255, 255, 0.2);
                 }
 
-                .field-row {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 0.35rem;
-                    margin-bottom: 0.6rem;
-                }
-
-                .field-row label {
-                    font-size: 0.92rem;
-                    font-weight: 800;
-                }
-
-                .input {
-                    width: 100%;
-                    padding: 0.6rem 0.7rem;
-                    border-radius: 12px;
-                    border: 0;
-                    outline: none;
-                    background: rgba(255, 255, 255, 0.65);
-                    color: #111111;
-                    font-size: 0.98rem;
-                }
-
-                .input::placeholder {
-                    color: rgba(17, 17, 17, 0.55);
-                }
-
-                .chat-box {
-                    border-radius: 14px;
-                    padding: 0.6rem;
-                    background: rgba(255, 255, 255, 0.17);
-                    max-height: 240px;
-                    overflow: auto;
-                    line-height: 1.35;
-                }
-
-                .chat-message {
-                    margin: 0.55rem 0;
-                }
-
-                .chat-message .bubble {
-                    display: inline-block;
-                    padding: 0.55rem 0.7rem;
-                    border-radius: 12px;
-                    max-width: 100%;
-                    word-break: break-word;
-                }
-
-                .chat-message.user {
-                    text-align: right;
-                }
-
-                .chat-message.user .bubble {
-                    background: rgba(255, 255, 255, 0.72);
-                }
-
-                .chat-message.assistant {
-                    text-align: left;
-                }
-
-                .chat-message.assistant .bubble {
-                    background: rgba(255, 255, 255, 0.36);
-                }
-
-                .chat-message .role {
-                    display: block;
-                    font-size: 0.9rem;
-                    font-weight: 900;
-                    margin-bottom: 0.25rem;
-                    opacity: 0.9;
-                }
-
-                .input-row {
-                    display: flex;
-                    gap: 0.6rem;
-                    align-items: center;
-                    margin-top: 0.6rem;
-                }
-
-                .input-row .input {
-                    flex: 1;
-                }
-
                 @media (max-width: 900px) {
                     .layout {
                         grid-template-columns: 1fr;
@@ -575,7 +378,6 @@ def index():
                         <h2 class="panel-title">Name Generator</h2>
                         <div class="actions">
                             <button onclick="generateName()">Generate Name</button>
-                                <button onclick="generateOllamaName()">Generate with Ollama</button>
                             <button class="secondary-btn" onclick="clearHistory()">Clear History</button>
                         </div>
                         <div class="name-box">
@@ -599,41 +401,6 @@ def index():
                             alt="Picrew logo"
                             onerror="this.style.display='none';"
                         />
-                        <hr style="border: 0; border-top: 1px solid rgba(0, 0, 0, 0.15); margin: 1rem 0;" />
-
-                        <h2 class="panel-title">Ollama Chat</h2>
-
-                        <div class="field-row">
-                            <label for="ollamaBaseUrl">Ollama Base URL</label>
-                            <input
-                                id="ollamaBaseUrl"
-                                class="input"
-                                value="http://127.0.0.1:11434"
-                                placeholder="http://127.0.0.1:11434"
-                            />
-                        </div>
-
-                        <div class="field-row">
-                            <label for="ollamaModel">Model</label>
-                            <input
-                                id="ollamaModel"
-                                class="input"
-                                value="llama3"
-                                placeholder="llama3"
-                            />
-                        </div>
-
-                        <div id="ollamaChatMessages" class="chat-box"></div>
-
-                        <div class="input-row">
-                            <input
-                                id="ollamaChatInput"
-                                class="input"
-                                placeholder="Ask for names, backstory ideas, etc."
-                                onkeydown="if (event.key === 'Enter') sendOllamaChat();"
-                            />
-                            <button onclick="sendOllamaChat()">Send</button>
-                        </div>
                     </section>
                 </section>
                 <div class="inspired">
@@ -669,85 +436,6 @@ def index():
                     document.getElementById('result').textContent = value;
                     if (data.name) {
                         addToHistory(data.name);
-                    }
-                }
-
-                function getOllamaConfig() {
-                    return {
-                        base_url: document.getElementById('ollamaBaseUrl').value,
-                        model: document.getElementById('ollamaModel').value
-                    };
-                }
-
-                async function generateOllamaName() {
-                    const { base_url, model } = getOllamaConfig();
-                    const res = await fetch('/api/ollama/name', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ base_url, model })
-                    });
-                    const data = await res.json();
-                    const value = data.name || data.error;
-                    document.getElementById('result').textContent = value;
-                    if (data.name) {
-                        addToHistory(data.name);
-                    }
-                }
-
-                const ollamaSystemPrompt = 'You are a helpful creative assistant for fantasy roleplaying character creation. Keep responses concise and directly useful.';
-                let ollamaChatLog = [];
-
-                function addOllamaChatMessage(role, text) {
-                    const container = document.getElementById('ollamaChatMessages');
-                    const msg = document.createElement('div');
-                    msg.className = `chat-message ${role}`;
-
-                    const roleEl = document.createElement('span');
-                    roleEl.className = 'role';
-                    roleEl.textContent = role === 'user' ? 'You' : 'Ollama';
-
-                    const bubble = document.createElement('div');
-                    bubble.className = 'bubble';
-                    bubble.textContent = text;
-
-                    msg.appendChild(roleEl);
-                    msg.appendChild(bubble);
-                    container.appendChild(msg);
-                    container.scrollTop = container.scrollHeight;
-                }
-
-                async function sendOllamaChat() {
-                    const inputEl = document.getElementById('ollamaChatInput');
-                    const message = inputEl.value.trim();
-                    if (!message) return;
-
-                    addOllamaChatMessage('user', message);
-                    ollamaChatLog.push({ role: 'user', content: message });
-                    inputEl.value = '';
-
-                    const { base_url, model } = getOllamaConfig();
-                    const messages = [{ role: 'system', content: ollamaSystemPrompt }, ...ollamaChatLog];
-
-                    const res = await fetch('/api/ollama/chat', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ base_url, model, messages })
-                    });
-
-                    const data = await res.json();
-                    if (!res.ok) {
-                        const errText = data.error || 'Ollama error.';
-                        addOllamaChatMessage('assistant', errText);
-                        return;
-                    }
-
-                    const reply = data.reply || '';
-                    addOllamaChatMessage('assistant', reply);
-                    ollamaChatLog.push({ role: 'assistant', content: reply });
-
-                    // Keep the last few turns to limit token usage.
-                    if (ollamaChatLog.length > 10) {
-                        ollamaChatLog = ollamaChatLog.slice(-10);
                     }
                 }
             </script>
