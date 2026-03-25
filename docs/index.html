@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Name Generator</title>
+    <link rel="icon" href="data:," />
+    <style>
+      :root {
+        --bg1: #ff4d6d;
+        --bg2: #ff9e00;
+        --bg3: #ffd60a;
+        --bg4: #2dc653;
+        --bg5: #2ec4ff;
+        --bg6: #5a4cff;
+        --bg7: #c77dff;
+        --surface: rgba(255, 255, 255, 0.2);
+        --surface-strong: rgba(255, 255, 255, 0.28);
+        --text: #111111;
+        --shadow: rgba(0, 0, 0, 0.22);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, sans-serif;
+        min-height: 100vh;
+        margin: 0;
+        padding: 1.25rem;
+        color: var(--text);
+        background: linear-gradient(
+          120deg,
+          var(--bg1),
+          var(--bg2),
+          var(--bg3),
+          var(--bg4),
+          var(--bg5),
+          var(--bg6),
+          var(--bg7)
+        );
+        background-size: 350% 350%;
+        animation: rainbowShift 16s ease infinite;
+      }
+
+      .card {
+        width: min(1100px, 100%);
+        margin: 0 auto;
+        border-radius: 22px;
+        padding: 1.25rem;
+        background: var(--surface);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 16px 45px var(--shadow);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 2.1rem;
+        text-shadow: none;
+        text-align: center;
+      }
+
+      .layout {
+        margin-top: 1rem;
+        display: grid;
+        grid-template-columns: 1.25fr 0.75fr;
+        gap: 1rem;
+      }
+
+      .panel {
+        border-radius: 16px;
+        background: var(--surface-strong);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        padding: 1rem;
+      }
+
+      .panel-title {
+        margin: 0 0 0.75rem 0;
+        font-size: 1.05rem;
+        font-weight: 700;
+      }
+
+      button {
+        padding: 0.75rem 1.25rem;
+        font-size: 1rem;
+        border: 0;
+        border-radius: 12px;
+        cursor: pointer;
+        font-weight: 700;
+        color: #111111;
+        background: linear-gradient(90deg, #ffffff, #fff3bf);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+      }
+
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28);
+      }
+
+      .actions {
+        display: flex;
+        gap: 0.6rem;
+        justify-content: center;
+      }
+
+      .secondary-btn {
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+        border: 0;
+        border-radius: 12px;
+        cursor: pointer;
+        font-weight: 700;
+        color: #111111;
+        background: linear-gradient(90deg, #ffe1e8, #ffffff);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+      }
+
+      .secondary-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
+      }
+
+      .name-box {
+        margin-top: 0.85rem;
+        min-height: 82px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        padding: 0.75rem;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      #result {
+        font-size: 1.35rem;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        text-shadow: none;
+      }
+
+      .history-wrap {
+        margin-top: 0.85rem;
+        border-radius: 14px;
+        padding: 0.6rem;
+        background: rgba(255, 255, 255, 0.17);
+      }
+
+      #history {
+        margin: 0;
+        padding-left: 1.25rem;
+        max-height: 260px;
+        overflow: auto;
+        line-height: 1.5;
+      }
+
+      #history li {
+        margin-bottom: 0.2rem;
+        word-break: break-word;
+      }
+
+      .inspired {
+        margin-top: 0.8rem;
+        text-align: center;
+        font-size: 0.95rem;
+      }
+
+      .inspired a {
+        color: #111111;
+        font-weight: 700;
+      }
+
+      .links p {
+        margin: 0.5rem 0 0 0;
+        line-height: 1.4;
+      }
+
+      .links a {
+        color: #111111;
+        font-weight: 800;
+      }
+
+      .note {
+        margin-top: 0.75rem;
+        font-size: 0.92rem;
+        opacity: 0.9;
+      }
+
+      @media (max-width: 900px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @keyframes rainbowShift {
+        0% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>Let's Party!</h1>
+      <section class="layout">
+        <section class="panel">
+          <h2 class="panel-title">Name Generator</h2>
+          <div class="actions">
+            <button id="generateBtn">Generate Name</button>
+            <button class="secondary-btn" id="clearBtn">Clear History</button>
+          </div>
+          <div class="name-box">
+            <div id="result">Click "Generate Name" to start.</div>
+          </div>
+          <div class="history-wrap">
+            <h2 class="panel-title">Name History</h2>
+            <ol id="history"></ol>
+          </div>
+        </section>
+
+        <section class="panel links">
+          <h2 class="panel-title">Links</h2>
+          <p>
+            Picrew Character Creator:
+            <a href="https://picrew.me/en" target="_blank" rel="noopener noreferrer">picrew.me/en</a>
+          </p>
+          <p class="note" id="dataStatus">Loading name lists…</p>
+        </section>
+      </section>
+      <div class="inspired">
+        Inspired by
+        <a href="https://www.fantasynamegenerators.com/" target="_blank" rel="noopener noreferrer">
+          Fantasy Name Generators
+        </a>
+      </div>
+    </main>
+
+    <script>
+      const historyLimit = 15;
+      const historyEl = document.getElementById("history");
+      const resultEl = document.getElementById("result");
+      const dataStatusEl = document.getElementById("dataStatus");
+
+      const FANTASY_FIRST_START = [
+        "ae","al","ar","bel","cae","cor","dae","el","fae","gal","hal","is","kae","lae","mor","ny","or","rae","syl","tha","vae","wyn","xe","yor"
+      ];
+      const FANTASY_FIRST_MIDDLE = ["la","ri","na","dor","ven","lin","the","mir","dra","sha","nor","qu"];
+      const FANTASY_FIRST_END = ["a","an","ar","el","en","eth","ia","ion","is","or","ra","yn"];
+      const FANTASY_LAST_START = [
+        "ash","black","bright","cinder","dawn","dusk","ember","frost","gold","gray","iron","moon","night","oak","raven","river","silver","star","storm","sun","thorn","vale","whisper","wind"
+      ];
+      const FANTASY_LAST_END = [
+        "bane","bloom","brook","crest","fall","field","flame","forge","glen","guard","haven","heart","keep","leaf","rider","shade","song","spire","stone","vale","walker","ward","weaver","wind","wood"
+      ];
+
+      function buildFantasyPools() {
+        const first = [];
+        for (const start of FANTASY_FIRST_START) {
+          for (const mid of FANTASY_FIRST_MIDDLE) {
+            for (const end of FANTASY_FIRST_END) {
+              first.push((start + mid + end).replace(/^\w/, (c) => c.toUpperCase()));
+            }
+          }
+        }
+        const last = [];
+        for (const start of FANTASY_LAST_START) {
+          for (const end of FANTASY_LAST_END) {
+            const s = start + end;
+            last.push(s.replace(/^\w/, (c) => c.toUpperCase()));
+          }
+        }
+        return { first, last };
+      }
+
+      const fantasyPools = buildFantasyPools();
+
+      let firstNames = null;
+      let lastNames = null;
+      let loadError = null;
+
+      function parseLines(text) {
+        return text
+          .split(/\r?\n/)
+          .map((l) => l.trim())
+          .filter(Boolean);
+      }
+
+      async function loadListsOnce() {
+        if (firstNames && lastNames) return;
+        if (loadError) return;
+
+        try {
+          const [firstRes, lastRes] = await Promise.all([
+            fetch("random_names.txt", { cache: "no-store" }),
+            fetch("random_surnames.txt", { cache: "no-store" }),
+          ]);
+
+          if (!firstRes.ok) throw new Error("Failed to load random_names.txt");
+          if (!lastRes.ok) throw new Error("Failed to load random_surnames.txt");
+
+          const [firstText, lastText] = await Promise.all([firstRes.text(), lastRes.text()]);
+          firstNames = parseLines(firstText);
+          lastNames = parseLines(lastText);
+
+          if (!firstNames.length) throw new Error("random_names.txt is empty");
+          if (!lastNames.length) throw new Error("random_surnames.txt is empty");
+
+          dataStatusEl.textContent = "Name lists loaded.";
+        } catch (e) {
+          loadError = e;
+          dataStatusEl.textContent =
+            "Name lists could not be loaded. Falling back to fantasy names only.";
+        }
+      }
+
+      function pick(arr) {
+        return arr[Math.floor(Math.random() * arr.length)];
+      }
+
+      function addToHistory(name) {
+        const li = document.createElement("li");
+        li.textContent = name;
+        historyEl.prepend(li);
+        while (historyEl.children.length > historyLimit) {
+          historyEl.removeChild(historyEl.lastElementChild);
+        }
+      }
+
+      function clearHistory() {
+        historyEl.innerHTML = "";
+      }
+
+      async function generateName() {
+        await loadListsOnce();
+
+        const useFileFirst = Math.random() < 0.75 && firstNames && firstNames.length;
+        const useFileLast = Math.random() < 0.75 && lastNames && lastNames.length;
+
+        const first = useFileFirst ? pick(firstNames) : pick(fantasyPools.first);
+        const last = useFileLast ? pick(lastNames) : pick(fantasyPools.last);
+        const full = `${first} ${last}`.trim();
+
+        resultEl.textContent = full;
+        addToHistory(full);
+      }
+
+      document.getElementById("generateBtn").addEventListener("click", generateName);
+      document.getElementById("clearBtn").addEventListener("click", clearHistory);
+
+      loadListsOnce();
+    </script>
+  </body>
+</html>
