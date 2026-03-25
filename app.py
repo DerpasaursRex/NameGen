@@ -3,8 +3,9 @@ import random
 from pathlib import Path
 
 app = Flask(__name__)
-FIRST_NAMES_FILE = Path("random_names.txt")
-LAST_NAMES_FILE = Path("random_surnames.txt")
+BASE_DIR = Path(__file__).resolve().parent
+FIRST_NAMES_FILE = BASE_DIR / "random_names.txt"
+LAST_NAMES_FILE = BASE_DIR / "random_surnames.txt"
 
 FANTASY_FIRST_START = [
     "ae",
@@ -460,7 +461,7 @@ def favicon():
 
 @app.route("/picrewlogo.png")
 def picrew_logo():
-    return send_from_directory(".", "picrewlogo.png")
+    return send_from_directory(BASE_DIR, "picrewlogo.png")
 
 
 if __name__ == "__main__":

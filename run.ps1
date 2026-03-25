@@ -11,13 +11,11 @@ if (-not (Test-Path $python)) {
 }
 
 if ($Test) {
-    Write-Host "Running quick endpoint tests..."
-    $homeStatus = curl.exe -s -o NUL -w "%{http_code}" "http://127.0.0.1:5000/"
-    $apiBody = curl.exe -s "http://127.0.0.1:5000/api/name"
+    Write-Host "Running quick endpoint tests (Flask test client)..."
+    Write-Host "Installing dependencies..."
+    & $python -m pip install -r "requirements.txt"
 
-    Write-Host "GET / status: $homeStatus"
-    Write-Host "GET /api/name response:"
-    Write-Host $apiBody
+    & $python -c "from app import app as flask_app; c=flask_app.test_client(); r=c.get('/'); assert r.status_code==200; r2=c.get('/api/name'); assert r2.status_code==200; j=r2.get_json(); assert 'name' in j and isinstance(j['name'], str) and j['name'].strip(); r3=c.get('/picrewlogo.png'); assert r3.status_code==200; print('OK:', j['name'])"
     exit 0
 }
 
